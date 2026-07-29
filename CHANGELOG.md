@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-07-29
+
 ### Added
 - **Durable ChatGPT oracle jobs** - Added `surf oracle ask|status|result|follow|list` with recoverable conversation-backed jobs, repeatable context globs, and fail-closed context, model, and effort gates.
 
