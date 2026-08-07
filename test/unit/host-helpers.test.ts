@@ -189,11 +189,13 @@ describe("mapToolToMessage", () => {
   });
 
   describe("page.html command", () => {
-    it("maps to the dedicated page HTML message", () => {
-      expect(helpers.mapToolToMessage("page.html", {}, 123)).toEqual({
-        type: "GET_PAGE_HTML",
-        tabId: 123,
-      });
+    it("maps page HTML commands to the dedicated message", () => {
+      for (const tool of ["page.html", "page.save"]) {
+        expect(helpers.mapToolToMessage(tool, {}, 123)).toEqual({
+          type: "GET_PAGE_HTML",
+          tabId: 123,
+        });
+      }
     });
   });
 

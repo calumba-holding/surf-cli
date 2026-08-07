@@ -293,6 +293,7 @@ surf page.read --compact       # Minimal output for LLM efficiency
 surf page.read --max-bytes 2000 # Cap visible text at a UTF-8 byte boundary
 surf page.text                 # Plain text content only
 surf page.html                 # Rendered document HTML
+surf page.save --output page.html # Save rendered HTML to a file
 surf page.state                # Modals, loading state, scroll info
 ```
 
@@ -302,7 +303,7 @@ Use `page.html` when the user wants a static copy of the current rendered DOM. T
 
 ```bash
 # Save the active page as HTML.
-surf page.html > page.html
+surf page.save --output page.html
 
 # Save a Claude artifact or other preview page after it loads.
 surf wait.dom --stable 500
