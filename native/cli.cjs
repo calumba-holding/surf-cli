@@ -533,7 +533,7 @@ const TOOLS = {
       "scroll": {
         desc: "Scroll in direction",
         args: ["direction", "pixels"],
-        opts: { direction: "up|down|left|right", amount: "Scroll amount (1-10)" },
+        opts: { direction: "up|down|left|right", amount: "Scroll amount in 100 px steps (1-10)" },
         examples: [
           { cmd: "scroll down 800", desc: "Scroll down 800px" },
           { cmd: "scroll --direction down --amount 3", desc: "Scroll down" },
