@@ -804,7 +804,9 @@ describe("CLI argument parsing", () => {
       const { request, stdout } = await runCli(["page.save", "--output", output]);
       expect(request.params.tool).toBe("page.save");
       expect(request.params.args).toEqual({});
-      expect(fs.readFileSync(output, "utf8")).toBe("<!doctype html>\n<html><body>Rendered</body></html>");
+      expect(fs.readFileSync(output, "utf8")).toBe(
+        "<!doctype html>\n<html><body>Rendered</body></html>",
+      );
       expect(stdout).toContain(`Saved rendered page HTML to ${output}`);
     } finally {
       fs.rmSync(output, { force: true });
