@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-08-07
+
 ### Added
 - **Pi extension** - Added optional Pi browser tools backed by Surf's native-host socket, plus optional pi-subagents background reporting for session-owned oracle jobs.
 - **Rendered page HTML** - Added `surf page.html` to print and `surf page.save --output <path>` to save the current rendered document HTML, with `--selector <css>` and `--strip-scripts` for bounded static exports of Claude artifacts or other rendered pages.
