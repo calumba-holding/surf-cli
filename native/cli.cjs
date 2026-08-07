@@ -3328,6 +3328,10 @@ async function handleResponse(response) {
     data = { response: data };
   }
 
+  if (tool === 'kimi' && typeof data === 'string') {
+    data = { response: data };
+  }
+
   if (tool === "page.save" && typeof data?.html === "string") {
     const saveTo = path.resolve(outputPath);
     fs.mkdirSync(path.dirname(saveTo), { recursive: true });
@@ -3552,8 +3556,8 @@ async function handleResponse(response) {
         const meta = [];
         if (data.model) meta.push(data.model);
         if (data.partial) meta.push("partial");
-        meta.push(`${((data.tookMs || 0) / 1000).toFixed(1)}s`);
-        console.error(`\n[${meta.join(' | ')}]`);
+        if (Number.isFinite(data.tookMs)) meta.push(`${(data.tookMs / 1000).toFixed(1)}s`);
+        if (meta.length > 0) console.error(`\n[${meta.join(' | ')}]`);
         if (data.url) console.error(`URL: ${data.url}`);
         if (data.warnings?.length) {
           for (const w of data.warnings) console.warn(`Warning: ${w}`);

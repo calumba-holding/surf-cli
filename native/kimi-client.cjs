@@ -32,7 +32,7 @@ function getMatchLabels(desiredModel) {
   for (const m of Object.values(DEFAULT_KIMI_MODELS)) {
     if (m.id === desiredModel) labels.add(m.name);
   }
-  return Array.from(labels).filter(Boolean).map(normalizeLabel);
+  return Array.from(new Set(Array.from(labels).filter(Boolean).map(normalizeLabel)));
 }
 
 // ============================================================================
@@ -148,23 +148,29 @@ async function checkLoginStatus(jsEval, signal) {
 }
 
 async function waitForKimiReady(jsEval, signal, timeoutMs = 25000) {
-  const deadline = Date.now() + timeoutMs;
-  let lastState = null;
-  while (Date.now() < deadline) {
-    const state = await evaluate(
-      jsEval,
-      `(() => {
-        const input = ${FIND_INPUT_JS};
-        const visible = !!input && input.offsetParent !== null;
-        const body = (document.body.innerText || '');
-        return { ready: visible, hasInput: visible, bodyLen: body.length, url: location.href };
-      })()`,
-      signal
-    );
-    lastState = state;
-    if (state && state.ready) return state;
-    await delay(250, signal);
-  }
+      const deadline = Date.now() + timeoutMs;
+      let lastState = null;
+      while (Date.now() < deadline) {
+        let state = null;
+        try {
+          state = await evaluate(
+            jsEval,
+            `(() => {
+              const input = ${FIND_INPUT_JS};
+              const visible = !!input && input.offsetParent !== null;
+              const body = (document.body.innerText || '');
+              return { ready: visible, hasInput: visible, bodyLen: body.length, url: location.href };
+            })()`,
+            signal
+          );
+        } catch (e) {
+          if (signal?.aborted) throw e;
+          // Transient jsEval failure mid-SPA-load - keep waiting
+        }
+        lastState = state;
+        if (state && state.ready) return state;
+        await delay(250, signal);
+      }
   if (lastState) {
     throw new Error(`Kimi chat UI not detected (current: ${lastState.url}) - may need to log in to kimi.com`);
   }
@@ -315,8 +321,9 @@ async function typePrompt(jsEval, signal, prompt) {
     const input = ${FIND_INPUT_JS};
     const text = (input ? input.textContent : '') || '';
     const tail = ${JSON.stringify(promptTail)};
+    const plen = ${JSON.stringify(prompt.length)};
     const norm = text.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return { len: text.length, matched: tail ? norm.includes(tail) : text.length > 0 };
+    return { len: text.length, matched: tail ? norm.includes(tail) : text.length > 0, full: text.length >= plen };
   })()`;
 
   // 1. Focus the composer
@@ -345,19 +352,37 @@ async function typePrompt(jsEval, signal, prompt) {
     let last = null;
     while (Date.now() < deadline) {
       last = await evaluate(jsEval, verifyCode, signal);
-      if (last && last.matched && last.len > 0) return last;
+      if (last && last.matched && last.full && last.len > 0) return last;
       await delay(400, signal);
     }
     return last;
   };
 
   const result = await waitForText('primary');
-  if (result && result.matched && result.len > 0) return;
+  if (result && result.matched && result.full && result.len > 0) return;
 
-  // 3. Fallback: selection + beforeinput + execCommand
+  // 3. Fallback: clear composer, then selection + beforeinput + execCommand.
+  // Clearing first prevents duplicated text when the primary insert partially
+  // committed into the Lexical editor.
+  const cleared = await evaluate(
+    jsEval,
+    `(() => {
+      const input = ${FIND_INPUT_JS};
+      if (!input) return { ok: false };
+      input.focus();
+      try {
+    document.execCommand('selectAll', false, null);
+    document.execCommand('delete', false, null);
+      } catch (e) { /* some engines ignore */ }
+      return { ok: true };
+    })()`,
+    signal
+  );
+  void cleared;
+  await delay(300, signal);
   const result2 = await waitForText('fallback');
-  if (!result2 || !result2.matched || !result2.len) {
-    const detail = result2 ? `(len=${result2.len})` : '';
+  if (!result2 || !result2.matched || !result2.full || !result2.len) {
+    const detail = result2 ? `(len=${result2.len}, full=${result2.full})` : '';
     throw new Error(`Kimi composer did not accept typed text ${detail}`);
   }
 }
@@ -456,23 +481,43 @@ function extractKimiResponse(bodyText, userPrompt = "") {
     );
   };
 
-  // Locate the LAST occurrence of the user prompt (most recent turn)
+  // Locate the LAST occurrence of the user prompt (most recent turn).
+  // Prefer an exact normalized line match: replies that echo the prompt
+  // word ("hi", "ok") would otherwise match inside the reply and shift the
+  // slice past the answer.
   const promptNorm = normalizeLabel(userPrompt).slice(0, 30);
-  let lastIdx = -1;
-  if (promptNorm) {
+  const findPrompt = (exactOnly) => {
+    if (!promptNorm) return -1;
     for (let i = lines.length - 1; i >= 0; i--) {
       const n = normalizeLabel(lines[i]);
-      if (n.includes(promptNorm)) { lastIdx = i; break; }
+      if (exactOnly ? n === promptNorm : n.includes(promptNorm)) return i;
+    }
+    return -1;
+  };
+  let lastIdx = findPrompt(true);
+  if (lastIdx < 0) lastIdx = findPrompt(false);
+  let start = lastIdx >= 0 ? lastIdx + 1 : 0;
+
+  // If everything after the prompt marker is UI chrome (e.g. a reply that
+  // echoed the prompt and consumed the match), re-slice from the previous
+  // occurrence of the prompt instead of returning chrome as the answer.
+  const isChromeLine = (l) =>
+    isUI(l) || (l.length <= 1 && !/^[\d.,%$€£+\-—]+$/.test(l));
+  const sliceIsChrome = (from) =>
+    lines.slice(from).every((l) => isChromeLine(l));
+  if (sliceIsChrome(start) && lastIdx >= 0) {
+    for (let i = lastIdx - 1; i >= 0; i--) {
+      const n = normalizeLabel(lines[i]);
+      if (n.includes(promptNorm)) { start = i + 1; break; }
     }
   }
-  const start = lastIdx >= 0 ? lastIdx + 1 : 0;
 
   const out = [];
   for (let i = start; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
     if (isUI(line)) continue;
-    if (line.length <= 2 && !/^[\d.,%$€£+\-—]+$/.test(line)) continue;
+    if (line.length <= 1 && !/^[\d.,%$€£+\-—]+$/.test(line)) continue;
     out.push(line);
   }
 
@@ -481,7 +526,7 @@ function extractKimiResponse(bodyText, userPrompt = "") {
   // substantive (non-chrome) content - otherwise the reply hasn't started yet
   const rest = lines
     .slice(start)
-    .filter((l) => !isUI(l) && !(l.length <= 2 && !/^[\d.,%$€£+\-—]+$/.test(l)))
+    .filter((l) => !isUI(l) && !(l.length <= 1 && !/^[\d.,%$€£+\-—]+$/.test(l)))
     .join("\n")
     .trim();
   return rest || null;
@@ -520,8 +565,18 @@ async function waitForResponse(jsEval, signal, timeoutMs = 300000, userPrompt = 
       continue;
     }
 
-    const response = extractKimiResponse(snapshot.bodyText, userPrompt);
-    const current = response || "";
+        const response = extractKimiResponse(snapshot.bodyText, userPrompt);
+        const current = response || "";
+
+        // Free accounts see a priority-queue notice when Kimi is at capacity.
+        // Fail fast with a clear error instead of a 300s silent timeout.
+        if (!current && !snapshot.hasStop &&
+            /too many people are chatting with kimi|subscribe to enter a dedicated priority queue/i.test(snapshot.bodyText)) {
+          throw new Error(
+            "Kimi is at capacity (priority-queue notice shown when no paid subscription is active); retry later"
+          );
+        }
+
     if (current !== lastResponse) {
       lastResponse = current;
       stableCycles = 0;
@@ -603,17 +658,24 @@ async function query(options) {
     const targetModel = model || DEFAULT_MODEL;
     let selectedModel = targetModel;
     let modelSelectionFailed = false;
-    try {
-      selectedModel = await selectModel(evalPage, signal, targetModel);
-      log(`Model: ${selectedModel}`);
-      // K3 / K3 Swarm / agent rows switch kimi.com into the /agent or /projects
-      // workspace, which has a different composer this client does not drive.
-      const urlState = await evaluate(
-        evalPage,
-        `(() => ({ url: location.href }))()`,
-        signal
-      );
-      if (urlState && /\/agent|\/swarm|\/projects/.test(urlState.url)) {
+        try {
+          selectedModel = await selectModel(evalPage, signal, targetModel);
+          log(`Model: ${selectedModel}`);
+          // K3 / K3 Swarm / agent rows switch kimi.com into the /agent or
+          // /projects workspace, which has a different composer this client does
+          // not drive. Navigation can lag the click, so poll the URL briefly.
+          let urlState = null;
+          const urlDeadline = Date.now() + 3500;
+          while (Date.now() < urlDeadline) {
+            urlState = await evaluate(
+              evalPage,
+              `(() => ({ url: location.href }))()`,
+              signal
+            );
+            if (urlState && /\/agent|\/swarm|\/projects/.test(urlState.url)) break;
+            await delay(250, signal);
+          }
+          if (urlState && /\/agent|\/swarm|\/projects/.test(urlState.url)) {
         modelSelectionFailed = true;
         warnings.push(
           `Model "${selectedModel}" switches Kimi into its Agent workspace (${urlState.url}); ` +
