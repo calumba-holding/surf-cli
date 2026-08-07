@@ -1133,6 +1133,18 @@ export async function handleMessage(
       }
     }
 
+    case "GET_PAGE_HTML": {
+      if (!tabId) throw new Error("No tabId provided");
+      const results = await chrome.scripting.executeScript({
+        target: { tabId, frameIds: [getFrameIdForTab(tabId)] },
+        func: () => {
+          const doctype = document.doctype ? `<!doctype ${document.doctype.name}>\n` : "";
+          return doctype + document.documentElement.outerHTML;
+        },
+      });
+      return { html: results[0]?.result };
+    }
+
     case "LOCATE_ROLE": {
       if (!tabId) throw new Error("No tabId provided");
       if (!message.role) throw new Error("role required");

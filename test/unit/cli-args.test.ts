@@ -139,6 +139,9 @@ function createCliFixtureResult(request: any) {
       height: 1,
     };
   }
+  if (request.params.tool === "page.html") {
+    return { html: "<!doctype html>\n<html><body>Rendered</body></html>" };
+  }
   return "OK";
 }
 
@@ -268,6 +271,14 @@ describe("CLI argument parsing", () => {
     expect(stderr).toBe("");
     expect(stdout).toContain("surf --llm-context");
     expect(stdout).toContain("--remote <host>:<port>");
+  });
+
+  it("shows page.html command help without a socket", async () => {
+    const { code, stdout, stderr } = await runCliWithoutSocket(["page.html", "--help"]);
+
+    expect(code).toBe(0);
+    expect(stderr).toBe("");
+    expect(stdout).toContain("page.html - Print rendered document HTML");
   });
 
   it("keeps remote credential management local when remote routing is configured", async () => {
@@ -777,6 +788,14 @@ describe("CLI argument parsing", () => {
 
     expect(request.params.tool).toBe("page.read");
     expect(request.params.args).toMatchObject({ compact: true, "max-bytes": 1200 });
+  });
+
+  it("requests and prints rendered page HTML", async () => {
+    const { request, stdout } = await runCli(["page.html"]);
+
+    expect(request.params.tool).toBe("page.html");
+    expect(request.params.args).toEqual({});
+    expect(stdout).toBe("<!doctype html>\n<html><body>Rendered</body></html>\n");
   });
 
   it("rejects explicit CDP typing with selector targets", async () => {

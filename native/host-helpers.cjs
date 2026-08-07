@@ -936,6 +936,8 @@ function mapToolToMessage(tool, args, tabId) {
     }
     case "page.text":
       return { type: "GET_PAGE_TEXT", ...baseMsg };
+    case "page.html":
+      return { type: "GET_PAGE_HTML", ...baseMsg };
     case "page.state":
       return { type: "PAGE_STATE", ...baseMsg };
     case "locate.role":

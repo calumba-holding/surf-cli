@@ -230,6 +230,7 @@ surf read --compact                 # Remove empty structural elements
 surf read --depth 3 --compact       # Both (60% smaller output)
 surf read --max-bytes 2000          # Cap visible text on a UTF-8 byte boundary
 surf page.text                      # Raw text content only
+surf page.html                      # Rendered document HTML
 surf page.state                     # Modals, loading state, scroll position
 ```
 

@@ -188,6 +188,15 @@ describe("mapToolToMessage", () => {
     });
   });
 
+  describe("page.html command", () => {
+    it("maps to the dedicated page HTML message", () => {
+      expect(helpers.mapToolToMessage("page.html", {}, 123)).toEqual({
+        type: "GET_PAGE_HTML",
+        tabId: 123,
+      });
+    });
+  });
+
   describe("type command", () => {
     it("routes a selector target to SMART_TYPE", () => {
       const msg = helpers.mapToolToMessage("type", { text: "hello", selector: "#i" });
