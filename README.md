@@ -947,6 +947,19 @@ cp -r skills/surf ~/.pi/agent/skills/
 
 See [`skills/README.md`](skills/README.md) for details.
 
+### Pi extension
+
+Surf also includes an optional Pi extension. Install or load Surf as a Pi package, or load it from a checkout:
+
+```bash
+pi install npm:surf-cli
+pi -e /path/to/surf-cli/pi-extension/surf.ts
+```
+
+It registers `surf_read`, `surf_screenshot`, `surf_click`, `surf_type`, `surf_tool`, and the `surf_oracle_*` tools. Browser calls use Surf's native-host socket, not shell commands. If `pi-subagents/background-work` is installed, the extension also reports active oracle jobs started by that Pi session. Pi still loads the browser tools when pi-subagents is not installed.
+
+Surf agents share one browser session. Use read tools for parallel scouts when possible. `surf_click` and `surf_type` can interfere with another agent's browser actions. Browser leases are not available yet.
+
 ## Development
 
 ```bash
