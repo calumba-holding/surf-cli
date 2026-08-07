@@ -280,6 +280,16 @@ describe("Page HTML handler", () => {
     }
   });
 
+  it("rejects malformed page HTML extraction results", async () => {
+    const handleMessage = await loadHandleMessage();
+    const chrome = (globalThis as any).chrome;
+    chrome.scripting.executeScript.mockResolvedValue([{ result: undefined }]);
+
+    await expect(handleMessage({ type: "GET_PAGE_HTML", tabId: 1 }, {})).rejects.toThrow(
+      "Page HTML extraction returned an invalid result",
+    );
+  });
+
   it("omits the doctype prefix when the document has no doctype", async () => {
     const handleMessage = await loadHandleMessage();
     const chrome = (globalThis as any).chrome;

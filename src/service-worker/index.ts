@@ -1142,7 +1142,9 @@ export async function handleMessage(
           return doctype + document.documentElement.outerHTML;
         },
       });
-      return { html: results[0]?.result };
+      const html = results[0]?.result;
+      if (typeof html !== "string") throw new Error("Page HTML extraction returned an invalid result");
+      return { html };
     }
 
     case "LOCATE_ROLE": {

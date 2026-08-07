@@ -3380,7 +3380,7 @@ async function handleResponse(response) {
     console.log(data.pageContent);
   } else if (tool === "page.text" && data?.text) {
     console.log(data.text);
-  } else if (tool === "page.html" && data?.html) {
+  } else if (tool === "page.html" && typeof data?.html === "string") {
     console.log(data.html);
   } else if (tool === "emulate.device" && data?.devices) {
     console.log("Available devices:\n");
