@@ -533,7 +533,7 @@ const TOOLS = {
       "scroll": {
         desc: "Scroll in direction",
         args: ["direction", "pixels"],
-        opts: { direction: "up|down|left|right", amount: "Scroll amount (1-10)" },
+        opts: { direction: "up|down|left|right", amount: "Scroll amount in 100 px steps (1-10)" },
         examples: [
           { cmd: "scroll down 800", desc: "Scroll down 800px" },
           { cmd: "scroll --direction down --amount 3", desc: "Scroll down" },
@@ -576,6 +576,11 @@ const TOOLS = {
       },
       "read": { desc: "Alias for page.read", args: [], alias: "page.read" },
       "page.text": { desc: "Extract all text from page", args: [] },
+      "page.html": {
+        desc: "Print rendered document HTML",
+        args: [],
+        examples: [{ cmd: "page.html", desc: "Print current document HTML" }],
+      },
       "page.state": { desc: "Get page state (modals, loading, etc.)", args: [] },
     }
   },
@@ -1464,7 +1469,7 @@ const ALL_SOCKET_TOOLS = [
   "click_type", "click_type_submit", "type", "key", "type_submit",
   "scroll", "scroll_to", "hover", "left_click_drag", "drag", "wait",
   "computer",
-  "page.read", "page.text", "page.state",
+  "page.read", "page.text", "page.html", "page.state",
   "locate.role", "locate.text", "locate.label",
   "tab.list", "tab.new", "tab.switch", "tab.close", "tab.move", "tab.name", "tab.unname", "tab.named",
   "tab.group", "tab.ungroup", "tab.groups", "tab.reload",
@@ -3375,6 +3380,8 @@ async function handleResponse(response) {
     console.log(data.pageContent);
   } else if (tool === "page.text" && data?.text) {
     console.log(data.text);
+  } else if (tool === "page.html" && typeof data?.html === "string") {
+    console.log(data.html);
   } else if (tool === "emulate.device" && data?.devices) {
     console.log("Available devices:\n");
     const devices = data.devices;
