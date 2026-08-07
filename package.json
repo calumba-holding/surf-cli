@@ -40,7 +40,7 @@
   "scripts": {
     "dev": "vite build --watch --mode development",
     "build": "vite build",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit && tsc --noEmit -p tsconfig.pi-extension.json",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "lint:test": "biome check test/",
@@ -66,6 +66,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
     "@types/chrome": "^0.2.2",
+    "@types/node": "^26.1.2",
     "@vitest/coverage-v8": "^4.1.9",
     "@vitest/ui": "^4.1.9",
     "puppeteer": "25.4.0",
