@@ -355,6 +355,22 @@ const TOOLS = {
           { cmd: 'aistudio "quick answer" --model gemini-3-flash-preview', desc: "Model selection" },
         ]
       },
+      "kimi": {
+        desc: "Query Kimi AI (kimi.com, Moonshot K-series) using your browser session",
+        args: ["query"],
+        opts: {
+          "with-page": "Include current page context",
+          model: "Model: instant (default), thinking, high - or any model label shown in kimi.com's model picker",
+          timeout: "Timeout in seconds (default: 300)",
+          validate: "Check kimi.com UI and available models (no query sent)"
+        },
+        examples: [
+          { cmd: 'kimi "explain quantum computing"', desc: "Basic query" },
+          { cmd: 'kimi "summarize" --with-page', desc: "With page context" },
+          { cmd: 'kimi "deep dive" --model thinking', desc: "Try the Thinking model" },
+          { cmd: 'kimi --validate', desc: "Check UI and list available models" },
+        ]
+      },
       "aistudio.build": {
         desc: "Build an app via Google AI Studio App Builder (uses browser session)",
         args: ["query"],
@@ -2625,6 +2641,7 @@ const PRIMARY_ARG_MAP = {
   grok: "query",
   aistudio: "query",
   "aistudio.build": "query",
+  kimi: "query",
   navigate: "url",
   go: "url",
   js: "code",
@@ -3530,7 +3547,18 @@ async function handleResponse(response) {
     if (meta.length > 0) {
       console.error(`[${meta.join(" | ")}]`);
     }
-  } else if (tool === "perplexity" && data?.response) {
+      } else if (tool === "kimi" && data?.response) {
+        console.log(data.response);
+        const meta = [];
+        if (data.model) meta.push(data.model);
+        if (data.partial) meta.push("partial");
+        meta.push(`${((data.tookMs || 0) / 1000).toFixed(1)}s`);
+        console.error(`\n[${meta.join(' | ')}]`);
+        if (data.url) console.error(`URL: ${data.url}`);
+        if (data.warnings?.length) {
+          for (const w of data.warnings) console.warn(`Warning: ${w}`);
+        }
+      } else if (tool === "perplexity" && data?.response) {
     console.log(data.response);
     const meta = [];
     if (data.sources) meta.push(`${data.sources} sources`);
