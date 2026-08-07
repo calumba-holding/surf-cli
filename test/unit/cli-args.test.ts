@@ -139,7 +139,7 @@ function createCliFixtureResult(request: any) {
       height: 1,
     };
   }
-  if (request.params.tool === "page.html") {
+  if (request.params.tool === "page.html" || request.params.tool === "page.save") {
     return { html: "<!doctype html>\n<html><body>Rendered</body></html>" };
   }
   return "OK";
@@ -796,6 +796,19 @@ describe("CLI argument parsing", () => {
     expect(request.params.tool).toBe("page.html");
     expect(request.params.args).toEqual({});
     expect(stdout).toBe("<!doctype html>\n<html><body>Rendered</body></html>\n");
+  });
+
+  it("saves rendered page HTML through the page HTML tool", async () => {
+    const output = path.join(os.tmpdir(), `surf-page-save-${process.pid}-${Date.now()}.html`);
+    try {
+      const { request, stdout } = await runCli(["page.save", "--output", output]);
+      expect(request.params.tool).toBe("page.save");
+      expect(request.params.args).toEqual({});
+      expect(fs.readFileSync(output, "utf8")).toBe("<!doctype html>\n<html><body>Rendered</body></html>");
+      expect(stdout).toContain(`Saved rendered page HTML to ${output}`);
+    } finally {
+      fs.rmSync(output, { force: true });
+    }
   });
 
   it("rejects explicit CDP typing with selector targets", async () => {

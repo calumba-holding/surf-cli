@@ -581,6 +581,12 @@ const TOOLS = {
         args: [],
         examples: [{ cmd: "page.html", desc: "Print current document HTML" }],
       },
+      "page.save": {
+        desc: "Save rendered document HTML",
+        args: [],
+        opts: { output: "File path" },
+        examples: [{ cmd: "page.save --output page.html", desc: "Save current document HTML" }],
+      },
       "page.state": { desc: "Get page state (modals, loading, etc.)", args: [] },
     }
   },
@@ -1469,7 +1475,7 @@ const ALL_SOCKET_TOOLS = [
   "click_type", "click_type_submit", "type", "key", "type_submit",
   "scroll", "scroll_to", "hover", "left_click_drag", "drag", "wait",
   "computer",
-  "page.read", "page.text", "page.html", "page.state",
+  "page.read", "page.text", "page.html", "page.save", "page.state",
   "locate.role", "locate.text", "locate.label",
   "tab.list", "tab.new", "tab.switch", "tab.close", "tab.move", "tab.name", "tab.unname", "tab.named",
   "tab.group", "tab.ungroup", "tab.groups", "tab.reload",
@@ -2823,8 +2829,13 @@ if (tool === "network.export" && outputPath !== undefined) {
   toolArgs.output = outputPath;
 }
 
-if ((tool === "screenshot" || tool === "record" || tool === "perf-audit") && outputPath && typeof outputPath !== "string") {
+if ((tool === "screenshot" || tool === "record" || tool === "perf-audit" || tool === "page.save") && outputPath && typeof outputPath !== "string") {
   console.error("Error: --output requires a file path");
+  process.exit(1);
+}
+
+if (tool === "page.save" && !outputPath) {
+  console.error("Error: page.save requires --output <path>");
   process.exit(1);
 }
 
@@ -3297,6 +3308,17 @@ async function handleResponse(response) {
 
   if (tool === 'aistudio' && typeof data === 'string') {
     data = { response: data };
+  }
+
+  if (tool === "page.save" && typeof data?.html === "string") {
+    const saveTo = path.resolve(outputPath);
+    fs.mkdirSync(path.dirname(saveTo), { recursive: true });
+    fs.writeFileSync(saveTo, data.html);
+    if (!wantJson) {
+      console.log(`Saved rendered page HTML to ${saveTo}`);
+      socket.end();
+      process.exit(0);
+    }
   }
 
   if (tool === "perf-audit" && outputPath) {

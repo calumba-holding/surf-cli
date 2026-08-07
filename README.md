@@ -232,6 +232,7 @@ surf read --max-bytes 2000          # Cap visible text on a UTF-8 byte boundary
 surf page.text                      # Raw text content only
 surf page.html                      # Rendered document HTML
 surf page.html > artifact.html      # Save Claude artifacts or any rendered page
+surf page.save --output artifact.html # Save rendered HTML to a file
 surf page.state                     # Modals, loading state, scroll position
 ```
 
