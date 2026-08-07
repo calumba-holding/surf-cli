@@ -189,12 +189,24 @@ describe("mapToolToMessage", () => {
   });
 
   describe("page.html command", () => {
-    it("maps page HTML commands to the dedicated message", () => {
+    it("maps page HTML commands and export options to the dedicated message", () => {
       for (const tool of ["page.html", "page.save"]) {
-        expect(helpers.mapToolToMessage(tool, {}, 123)).toEqual({
+        expect(
+          helpers.mapToolToMessage(tool, { selector: "#artifact", "strip-scripts": true }, 123),
+        ).toEqual({
           type: "GET_PAGE_HTML",
+          selector: "#artifact",
+          stripScripts: true,
           tabId: 123,
         });
+      }
+    });
+
+    it("rejects invalid export selectors", () => {
+      for (const selector of ["", false]) {
+        expect(() => helpers.mapToolToMessage("page.html", { selector })).toThrow(
+          "selector must be a non-empty string",
+        );
       }
     });
   });

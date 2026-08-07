@@ -280,6 +280,77 @@ describe("Page HTML handler", () => {
     }
   });
 
+  it("rejects invalid export selector values", async () => {
+    const handleMessage = await loadHandleMessage();
+    const chrome = (globalThis as any).chrome;
+    chrome.scripting.executeScript.mockImplementation(async (injection: any) => [
+      { result: injection.func(...injection.args) },
+    ]);
+
+    await expect(
+      handleMessage({ type: "GET_PAGE_HTML", tabId: 1, selector: false }, {}),
+    ).rejects.toThrow("selector must be a non-empty string");
+  });
+
+  it("fails loudly when the requested export selector does not match", async () => {
+    const handleMessage = await loadHandleMessage();
+    const chrome = (globalThis as any).chrome;
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: { querySelector: () => null },
+    });
+    chrome.scripting.executeScript.mockImplementation(async (injection: any) => [
+      { result: injection.func(...injection.args) },
+    ]);
+
+    try {
+      await expect(
+        handleMessage({ type: "GET_PAGE_HTML", tabId: 1, selector: "#missing" }, {}),
+      ).rejects.toThrow('No element matches selector "#missing"');
+    } finally {
+      if (originalDocument) {
+        Object.defineProperty(globalThis, "document", originalDocument);
+      } else {
+        Reflect.deleteProperty(globalThis, "document");
+      }
+    }
+  });
+
+  it("strips a selected script root", async () => {
+    const handleMessage = await loadHandleMessage();
+    const chrome = (globalThis as any).chrome;
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+    const script = {
+      cloneNode: () => script,
+      matches: (selector: string) => selector === "script",
+      outerHTML: "<script>alert(1)</script>",
+      querySelectorAll: () => [],
+    };
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: { querySelector: () => script },
+    });
+    chrome.scripting.executeScript.mockImplementation(async (injection: any) => [
+      { result: injection.func(...injection.args) },
+    ]);
+
+    try {
+      await expect(
+        handleMessage(
+          { type: "GET_PAGE_HTML", tabId: 1, selector: "script", stripScripts: true },
+          {},
+        ),
+      ).resolves.toEqual({ html: "" });
+    } finally {
+      if (originalDocument) {
+        Object.defineProperty(globalThis, "document", originalDocument);
+      } else {
+        Reflect.deleteProperty(globalThis, "document");
+      }
+    }
+  });
+
   it("rejects malformed page HTML extraction results", async () => {
     const handleMessage = await loadHandleMessage();
     const chrome = (globalThis as any).chrome;

@@ -791,19 +791,31 @@ describe("CLI argument parsing", () => {
   });
 
   it("requests and prints rendered page HTML", async () => {
-    const { request, stdout } = await runCli(["page.html"]);
+    const { request, stdout } = await runCli([
+      "page.html",
+      "--selector",
+      "#artifact",
+      "--strip-scripts",
+    ]);
 
     expect(request.params.tool).toBe("page.html");
-    expect(request.params.args).toEqual({});
+    expect(request.params.args).toEqual({ selector: "#artifact", "strip-scripts": true });
     expect(stdout).toBe("<!doctype html>\n<html><body>Rendered</body></html>\n");
   });
 
   it("saves rendered page HTML through the page HTML tool", async () => {
     const output = path.join(os.tmpdir(), `surf-page-save-${process.pid}-${Date.now()}.html`);
     try {
-      const { request, stdout } = await runCli(["page.save", "--output", output]);
+      const { request, stdout } = await runCli([
+        "page.save",
+        "--selector",
+        "#artifact",
+        "--strip-scripts",
+        "--output",
+        output,
+      ]);
       expect(request.params.tool).toBe("page.save");
-      expect(request.params.args).toEqual({});
+      expect(request.params.args).toEqual({ selector: "#artifact", "strip-scripts": true });
       expect(fs.readFileSync(output, "utf8")).toBe(
         "<!doctype html>\n<html><body>Rendered</body></html>",
       );

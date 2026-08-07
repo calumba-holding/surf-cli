@@ -1137,10 +1137,21 @@ export async function handleMessage(
       if (!tabId) throw new Error("No tabId provided");
       const results = await chrome.scripting.executeScript({
         target: { tabId, frameIds: [getFrameIdForTab(tabId)] },
-        func: () => {
-          const doctype = document.doctype ? `<!doctype ${document.doctype.name}>\n` : "";
-          return doctype + document.documentElement.outerHTML;
+        func: (selector?: unknown, stripScripts?: boolean) => {
+          if (selector !== undefined && (typeof selector !== "string" || selector.length === 0)) {
+            throw new Error("selector must be a non-empty string");
+          }
+          const root = selector === undefined ? document.documentElement : document.querySelector(selector);
+          if (!root) throw new Error(`No element matches selector "${selector}"`);
+          const exportRoot = stripScripts ? root.cloneNode(true) as Element : root;
+          if (stripScripts) {
+            if (exportRoot.matches("script")) return "";
+            exportRoot.querySelectorAll("script").forEach((script) => script.remove());
+          }
+          const doctype = selector === undefined && document.doctype ? `<!doctype ${document.doctype.name}>\n` : "";
+          return doctype + exportRoot.outerHTML;
         },
+        args: [message.selector, message.stripScripts],
       });
       const html = results[0]?.result;
       if (typeof html !== "string") throw new Error("Page HTML extraction returned an invalid result");
