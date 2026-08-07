@@ -231,12 +231,12 @@ surf read --depth 3 --compact       # Both (60% smaller output)
 surf read --max-bytes 2000          # Cap visible text on a UTF-8 byte boundary
 surf page.text                      # Raw text content only
 surf page.html                      # Rendered document HTML
-surf page.html > artifact.html      # Save Claude artifacts or any rendered page
-surf page.save --output artifact.html # Save rendered HTML to a file
+surf page.html --strip-scripts > artifact.html # Save a safe static Claude artifact
+surf page.save --selector "#artifact" --strip-scripts --output artifact.html # Save one rendered element
 surf page.state                     # Modals, loading state, scroll position
 ```
 
-Use `surf page.html` after the page loads when you need a static HTML export of the current rendered DOM. It targets the active frame when `frame.switch` is active.
+Use `surf page.html --strip-scripts` after the page loads when you need a static export of a Claude artifact or other rendered DOM. Use `--selector <css>` to export one element. Both commands target the active frame when `frame.switch` is active.
 
 Element refs (`e1`, `e2`, `e3`...) are stable identifiers from the accessibility tree - semantic, predictable, and resilient to DOM changes.
 

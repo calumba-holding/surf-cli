@@ -4,7 +4,7 @@
 
 ### Added
 - **Pi extension** - Added optional Pi browser tools backed by Surf's native-host socket, plus optional pi-subagents background reporting for session-owned oracle jobs.
-- **Rendered page HTML** - Added `surf page.html` to print and `surf page.save --output <path>` to save the current rendered document HTML, with skill guidance for saving Claude artifacts or any rendered page as static HTML.
+- **Rendered page HTML** - Added `surf page.html` to print and `surf page.save --output <path>` to save the current rendered document HTML, with `--selector <css>` and `--strip-scripts` for bounded static exports of Claude artifacts or other rendered pages.
 - **Playbook script strategies** - Added opt-in trusted read-op scripts with dynamic `tools.run`/`tools.all` Surf tool orchestration and workflow auto-waits.
 
 ### Changed

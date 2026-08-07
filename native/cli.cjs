@@ -579,12 +579,13 @@ const TOOLS = {
       "page.html": {
         desc: "Print rendered document HTML",
         args: [],
+        opts: { selector: "Export matching CSS selector", "strip-scripts": "Remove script elements" },
         examples: [{ cmd: "page.html", desc: "Print current document HTML" }],
       },
       "page.save": {
         desc: "Save rendered document HTML",
         args: [],
-        opts: { output: "File path" },
+        opts: { output: "File path", selector: "Export matching CSS selector", "strip-scripts": "Remove script elements" },
         examples: [{ cmd: "page.save --output page.html", desc: "Save current document HTML" }],
       },
       "page.state": { desc: "Get page state (modals, loading, etc.)", args: [] },
