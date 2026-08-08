@@ -91,7 +91,7 @@ function formatToolContent(result, log = () => {}, options = {}) {
         output += `*Completed in ${result.tookMs}ms*`;
         return text(output);
       }
-      
+
       // Handle Grok validation results
       if (result.authenticated !== undefined && result.models !== undefined && result.expectedModels !== undefined) {
     let output = "## Grok Validation Results\n\n";

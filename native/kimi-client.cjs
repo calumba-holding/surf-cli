@@ -486,6 +486,24 @@ function extractKimiResponse(bodyText, userPrompt = "") {
   // word ("hi", "ok") would otherwise match inside the reply and shift the
   // slice past the answer.
   const promptNorm = normalizeLabel(userPrompt).slice(0, 30);
+  const promptLineNorms = String(userPrompt || "").split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map(normalizeLabel);
+  const findPromptSequence = () => {
+    if (promptLineNorms.length < 2) return -1;
+    for (let i = lines.length - promptLineNorms.length; i >= 0; i--) {
+      let matches = true;
+      for (let j = 0; j < promptLineNorms.length; j++) {
+        if (normalizeLabel(lines[i + j]) !== promptLineNorms[j]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) return i + promptLineNorms.length - 1;
+    }
+    return -1;
+  };
   const findPrompt = (exactOnly) => {
     if (!promptNorm) return -1;
     for (let i = lines.length - 1; i >= 0; i--) {
@@ -494,7 +512,8 @@ function extractKimiResponse(bodyText, userPrompt = "") {
     }
     return -1;
   };
-  let lastIdx = findPrompt(true);
+  let lastIdx = findPromptSequence();
+  if (lastIdx < 0) lastIdx = findPrompt(true);
   if (lastIdx < 0) lastIdx = findPrompt(false);
   let start = lastIdx >= 0 ? lastIdx + 1 : 0;
 
@@ -611,6 +630,7 @@ async function waitForResponse(jsEval, signal, timeoutMs = 300000, userPrompt = 
 async function query(options) {
   const {
     prompt,
+    extractionPrompt = prompt,
     model,
     timeout = 300000,
     createTab,
@@ -699,7 +719,7 @@ async function query(options) {
     await submitPrompt(evalPage, signal);
     log("Submitted, waiting for response...");
 
-    const response = await waitForResponse(evalPage, signal, timeout, prompt);
+    const response = await waitForResponse(evalPage, signal, timeout, extractionPrompt);
     log(`Response: ${response.text.length} chars${response.partial ? ' (partial)' : ''}`);
 
     return {

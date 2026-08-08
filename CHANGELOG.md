@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **Kimi AI integration** - Added `surf kimi` for Kimi browser-session queries and validation. Thanks to @jagaliano for #178.
+
 ### Changed
 - **Pi extension background bridge** - Prefer the official `pi-subagents/background-work` helper when Pi loads Surf with pi-subagents available, while keeping the global fallback for Claude Code, Codex, Cursor, direct CLI use, and other non-Pi harnesses.
 

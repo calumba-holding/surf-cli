@@ -1240,13 +1240,13 @@ function handleToolRequest(msg, socket, requestContext = requestStorage.getStore
     }).catch((err) => {
           sendToolResponse(socket, originalId, null, err.message);
         });
-        
+
         return;
       }
 
       if (extensionMsg.type === "KIMI_QUERY") {
         const { query, model, withPage, timeout } = extensionMsg;
-        
+
         queueAiRequest(async () => {
           // 1. Get page context if requested
           let pageContext = null;
@@ -1264,16 +1264,17 @@ function handleToolRequest(msg, socket, requestContext = requestStorage.getStore
               };
             }
           }
-          
+
           // 2. Build full prompt
           let fullPrompt = query || "";
           if (pageContext) {
             fullPrompt = `Page: ${pageContext.url}\n\n${pageContext.text}\n\n---\n\n${fullPrompt}`;
           }
-          
+
           // 3. Call Kimi client (uses generic browser primitives, no provider CDP types)
           const result = await kimiClient.query({
             prompt: fullPrompt,
+            extractionPrompt: query,
             signal: requestContext.signal,
             model: model,
             timeout: timeout || 300000,
@@ -1290,13 +1291,13 @@ function handleToolRequest(msg, socket, requestContext = requestStorage.getStore
             ),
             log: (msg) => log(`[kimi] ${msg}`)
           });
-          
+
           return result;
         }).then((result) => {
-          const response = { 
-            response: result.response, 
-            model: result.model, 
-            tookMs: result.tookMs 
+          const response = {
+            response: result.response,
+            model: result.model,
+            tookMs: result.tookMs
           };
           if (result.partial) {
             response.partial = true;
@@ -1314,7 +1315,7 @@ function handleToolRequest(msg, socket, requestContext = requestStorage.getStore
         }).catch((err) => {
           sendToolResponse(socket, originalId, null, err.message);
         });
-        
+
         return;
       }
 
@@ -1341,7 +1342,7 @@ function handleToolRequest(msg, socket, requestContext = requestStorage.getStore
         }).catch((err) => {
           sendToolResponse(socket, originalId, null, err.message);
         });
-        
+
         return;
       }
 
