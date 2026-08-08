@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+- **Pi extension background bridge** - Prefer the official `pi-subagents/background-work` helper when Pi loads Surf with pi-subagents available, while keeping the global fallback for Claude Code, Codex, Cursor, direct CLI use, and other non-Pi harnesses.
+
+### Fixed
+- **Pi oracle wake channel** - Emit `surf-oracle:finished` when Surf observes a terminal oracle result so pi-subagents can wake without waiting for the next snapshot poll.
+
 ## [2.12.0] - 2026-08-07
 
 ### Added
