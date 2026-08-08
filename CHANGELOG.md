@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-08-08
+
 ### Added
 - **Kimi AI integration** - Added `surf kimi` for Kimi browser-session queries and validation. Thanks to @jagaliano for #178.
 
