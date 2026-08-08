@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const {
   createToolRequest,
   registerGlobalBackgroundProvider,
   registerOptionalBackgroundProvider,
   rememberOracleJobForSession,
+  resolveBackgroundWorkRegister,
 } = require("../../pi-extension/surf.ts");
 
 const backgroundWorkKey = Symbol.for("pi-subagents.background-work.v1");
@@ -71,5 +72,23 @@ describe("Pi extension", () => {
     dispose();
     expect(registry.providers.has("surf-oracle")).toBe(false);
     delete (globalThis as Record<PropertyKey, unknown>)[backgroundWorkKey];
+  });
+
+  it("prefers the pi-subagents background-work helper when it is available", async () => {
+    const register = vi.fn(() => vi.fn());
+
+    await expect(
+      resolveBackgroundWorkRegister(async () => ({
+        registerBackgroundWorkProvider: register,
+      })),
+    ).resolves.toBe(register);
+  });
+
+  it("keeps the global fallback when pi-subagents is not available", async () => {
+    await expect(
+      resolveBackgroundWorkRegister(async () => {
+        throw new Error("not installed");
+      }),
+    ).resolves.toBe(registerGlobalBackgroundProvider);
   });
 });

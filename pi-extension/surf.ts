@@ -23,6 +23,7 @@ const MAX_OUTPUT_CHARS = 20_000;
 const ORACLE_ACTIVE_STATES = new Set(["created", "dispatched", "awaiting"]);
 const BACKGROUND_WORK_PROTOCOL_VERSION = 1;
 const BACKGROUND_WORK_REGISTRY_KEY = "pi-subagents.background-work.v1";
+const BACKGROUND_WORK_MODULE_SPECIFIER = "pi-subagents/background-work";
 
 type Pi = {
   registerTool(tool: Record<string, unknown>): void;
@@ -37,6 +38,12 @@ type BackgroundWorkProvider = {
   name: string;
   wakeChannels: string[];
   listActiveWork(): Array<{ id: string; sessionId: string }>;
+};
+
+type RegisterBackgroundWorkProvider = (provider: BackgroundWorkProvider) => () => void;
+
+type BackgroundWorkModule = {
+  registerBackgroundWorkProvider?: unknown;
 };
 
 type BackgroundWorkRegistry = {
@@ -128,7 +135,21 @@ export function registerGlobalBackgroundProvider(provider: BackgroundWorkProvide
   };
 }
 
-export function registerOptionalBackgroundProvider(sessionId: string, jobIds: Set<string>, listJobs: () => Array<{ id: string; state: string }>, register: (provider: BackgroundWorkProvider) => () => void) {
+export async function resolveBackgroundWorkRegister(
+  loadModule: () => Promise<BackgroundWorkModule> = () => import(BACKGROUND_WORK_MODULE_SPECIFIER) as Promise<BackgroundWorkModule>,
+): Promise<RegisterBackgroundWorkProvider> {
+  try {
+    const module = await loadModule();
+    if (typeof module.registerBackgroundWorkProvider === "function") {
+      return module.registerBackgroundWorkProvider as RegisterBackgroundWorkProvider;
+    }
+  } catch {
+    // The Pi bridge is optional. Surf also runs in other coding-agent harnesses and as a direct CLI.
+  }
+  return registerGlobalBackgroundProvider;
+}
+
+export function registerOptionalBackgroundProvider(sessionId: string, jobIds: Set<string>, listJobs: () => Array<{ id: string; state: string }>, register: RegisterBackgroundWorkProvider) {
   return register({
     name: "surf-oracle",
     wakeChannels: ["surf-oracle:finished"],
@@ -204,6 +225,7 @@ export default function surfExtension(pi: Pi) {
   let dispose: (() => void) | undefined;
   pi.on("session_start", (_event, ctx) => {
     sessionGeneration++;
+    const generation = sessionGeneration;
     sessionActive = false;
     dispose?.();
     dispose = undefined;
@@ -216,8 +238,22 @@ export default function surfExtension(pi: Pi) {
       const jobs = require("../native/oracle-jobs.cjs") as { listJobs(): Array<{ id: string; state: string }> };
       dispose = registerOptionalBackgroundProvider(sessionId, oracleJobIds, jobs.listJobs, registerGlobalBackgroundProvider);
       sessionActive = true;
+      void resolveBackgroundWorkRegister().then((register) => {
+        try {
+          if (register === registerGlobalBackgroundProvider || generation !== sessionGeneration) return;
+          const nextDispose = registerOptionalBackgroundProvider(sessionId, oracleJobIds, jobs.listJobs, register);
+          if (generation !== sessionGeneration) {
+            nextDispose();
+            return;
+          }
+          dispose?.();
+          dispose = nextDispose;
+        } catch {
+          // Keep the already-registered fallback provider.
+        }
+      });
     } catch {
-      // pi-subagents is optional. Browser tools work without it.
+      // The Pi bridge is optional. Browser tools work without pi-subagents.
     }
   });
   pi.on("session_shutdown", () => {
