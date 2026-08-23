@@ -1,7 +1,16 @@
 # Changelog
 
 ## [Unreleased]
-- **ChatGPT Pro effort verification** - Surf now clears stale composer text, types the prompt before Pro effort verification, and reads the composer picker state without letting unrelated metadata reject the accepted value.
+
+## [2.16.1] - 2026-08-23
+
+### Highlights
+- GPT Pro jobs now clear stale composer text before submitting a prompt.
+- Pro effort verification now waits until ChatGPT has the real prompt in the composer.
+- Text-only GPT Pro runs and follow-ups are less fragile in reused ChatGPT tabs.
+
+### Fixed
+- **ChatGPT Pro effort verification** - Surf now clears stale composer text, types the prompt, and verifies the Pro effort from the composer picker before submitting.
 
 ## [2.16.0] - 2026-08-23
 
