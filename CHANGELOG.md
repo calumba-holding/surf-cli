@@ -2,12 +2,19 @@
 
 ## [Unreleased]
 
+## [2.16.0] - 2026-08-23
+
+### Highlights
+- Pi integrations can now continue GPT Pro conversations through Surf Oracle follow-up jobs.
+- GPT Pro job polling is more reliable because status checks can observe finished jobs directly.
+- Cancelled GPT Pro jobs now stay cancelled instead of being reported as failed.
+
 ### Added
-- **GPT Pro follow-up groundwork** - Surf Oracle now records idempotent request IDs and follow-up lineage for Pi integrations that continue GPT Pro conversations.
+- **GPT Pro follow-ups** - Surf Oracle now records repeat-safe request IDs and follow-up lineage so Pi integrations can continue GPT Pro conversations.
 
 ### Fixed
-- **Pi GPT Pro polling** - The `surf-oracle` external-job provider now performs bounded result harvesting during status and reattach checks, so Pi polling can observe completed GPT Pro jobs without a separate result call.
-- **Pi GPT Pro cancellation** - Aborted Surf Oracle requests now stay non-terminal and keep their cancellation error instead of emitting a failed-job wake event.
+- **Pi GPT Pro polling** - The `surf-oracle` provider now checks for completed jobs during status and reattach calls, so Pi can observe finished GPT Pro jobs without an extra result request.
+- **Pi GPT Pro cancellation** - Cancelled Surf Oracle requests now keep their cancellation state instead of being reported as failed jobs.
 
 ## [2.15.2] - 2026-08-22
 
